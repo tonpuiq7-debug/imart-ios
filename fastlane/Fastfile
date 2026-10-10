@@ -11,38 +11,24 @@ platform :ios do
       in_house: false
     )
 
-    login_keychain = File.expand_path("~/Library/Keychains/login.keychain-db")
+    keychain_path = File.expand_path("~/Library/Keychains/build.keychain-db")
+    keychain_pwd = "build_pwd"
 
-    # In case certificate limit was reached from prior runs, auto-heal
-    begin
-      get_certificates(
-        api_key: api_key,
-        development: false,
-        keychain_path: login_keychain,
-        keychain_password: ""
-      )
-    rescue => ex
-      if ex.message.include?("maximum number of available Distribution certificates")
-        UI.important("Certificate limit reached. Cleaning up older certificates...")
-        certs = Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: "DISTRIBUTION" })
-        certs.each { |c| c.delete! }
-        get_certificates(
-          api_key: api_key,
-          development: false,
-          force: true,
-          keychain_path: login_keychain,
-          keychain_password: ""
-        )
-      else
-        raise ex
-      end
-    end
+    # Fetch existing or create new Distribution Certificate in dedicated keychain
+    get_certificates(
+      api_key: api_key,
+      development: false,
+      keychain_path: keychain_path,
+      keychain_password: keychain_pwd
+    )
+
+    # Allow codesign to access the private key non-interactively
+    sh("security", "set-key-partition-list", "-S", "apple-tool:,apple:,codesign:", "-s", "-k", keychain_pwd, keychain_path)
 
     # Fetch or create App Store Provisioning Profile
     get_provisioning_profile(
       api_key: api_key,
-      app_identifier: "app.web.imart.business",
-      force: true
+      app_identifier: "app.web.imart.business"
     )
 
     # Set code signing to manual using downloaded profile
