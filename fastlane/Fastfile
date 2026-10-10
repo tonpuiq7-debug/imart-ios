@@ -6,35 +6,42 @@ platform :ios do
     api_key = app_store_connect_api_key(
       key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
       issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_content: ENV["APP_STORE_CONNECT_PRIVATE_KEY"],
-      is_key_content_base64: false,
+      key_content: ENV["APP_STORE_CONNECT_PRIVATE_KEY_B64"],
+      is_key_content_base64: true,
       in_house: false
     )
 
-    # Create temporary keychain for CI runner
+    keychain_name = "ci_keychain"
+    keychain_password = "ci_password"
+
     create_keychain(
-      name: "ci_keychain",
-      password: "ci_password",
+      name: keychain_name,
+      password: keychain_password,
       default_keychain: true,
       unlock: true,
       timeout: 3600,
       lock_when_sleeps: false
     )
 
-    # Fetch or generate App Store Distribution Certificate
     get_certificates(
       api_key: api_key,
-      development: false,
-      keychain_path: "~/Library/Keychains/ci_keychain-db"
+      development: false
     )
 
-    # Fetch or generate App Store Provisioning Profile
     get_provisioning_profile(
       api_key: api_key,
       app_identifier: "app.web.imart.business"
     )
 
-    # Build the iOS Archive and IPA
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "imart.xcodeproj",
+      team_id: "Q6M87N5K22",
+      bundle_identifier: "app.web.imart.business",
+      profile_name: lane_context[SharedValues::SIGH_NAME],
+      code_sign_identity: "Apple Distribution"
+    )
+
     build_app(
       workspace: "imart.xcworkspace",
       scheme: "imart",
@@ -43,7 +50,6 @@ platform :ios do
       output_name: "imart.ipa"
     )
 
-    # Upload IPA to App Store Connect / TestFlight
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true
