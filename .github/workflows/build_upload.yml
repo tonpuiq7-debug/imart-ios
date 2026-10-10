@@ -7,19 +7,19 @@ on:
 
 jobs:
   build_and_upload:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Official GM Xcode version
+      - name: Select Highest Official GM Xcode version
         run: |
           echo "=== All Available Xcode Versions ==="
-          ls -d /Applications/Xcode*.app
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
           
           SELECTED_XCODE=""
-          # Check installed Xcode 16 versions in reverse order for an official GM release (build ending in a digit)
-          for x in $(ls -d /Applications/Xcode_16*.app | sort -V -r); do
+          # Check installed Xcode versions in reverse order for an official GM release (build ending in a digit)
+          for x in $(ls -d /Applications/Xcode*.app | sort -V -r); do
             BUILD=$("$x/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | grep "Build version" | awk '{print $3}')
             echo "Inspecting $x -> Build: $BUILD"
             if [[ "$BUILD" =~ [0-9]$ ]]; then
@@ -30,8 +30,7 @@ jobs:
           done
 
           if [ -z "$SELECTED_XCODE" ]; then
-            # Fallback to default or 16.0
-            SELECTED_XCODE="/Applications/Xcode_16.0.app"
+            SELECTED_XCODE=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
           fi
 
           echo "Activating: $SELECTED_XCODE"
