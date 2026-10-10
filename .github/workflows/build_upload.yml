@@ -12,14 +12,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode version
+      - name: Select Official GM Xcode version
         run: |
-          LATEST_XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -n 1)
-          if [ -z "$LATEST_XCODE" ]; then
-            LATEST_XCODE="/Applications/Xcode_16.0.app"
+          echo "=== All Available Xcode Versions ==="
+          ls -d /Applications/Xcode*.app
+          
+          SELECTED_XCODE=""
+          # Check installed Xcode 16 versions in reverse order for an official GM release (build ending in a digit)
+          for x in $(ls -d /Applications/Xcode_16*.app | sort -V -r); do
+            BUILD=$("$x/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | grep "Build version" | awk '{print $3}')
+            echo "Inspecting $x -> Build: $BUILD"
+            if [[ "$BUILD" =~ [0-9]$ ]]; then
+              SELECTED_XCODE="$x"
+              echo "Found GM Xcode release: $SELECTED_XCODE with build $BUILD"
+              break
+            fi
+          done
+
+          if [ -z "$SELECTED_XCODE" ]; then
+            # Fallback to default or 16.0
+            SELECTED_XCODE="/Applications/Xcode_16.0.app"
           fi
-          echo "Selecting $LATEST_XCODE"
-          sudo xcode-select -s "$LATEST_XCODE"
+
+          echo "Activating: $SELECTED_XCODE"
+          sudo xcode-select -s "$SELECTED_XCODE"
           xcodebuild -version
 
       - name: Prepare Keychain & Apple WWDR Certificates
