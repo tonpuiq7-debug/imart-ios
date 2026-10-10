@@ -21,6 +21,8 @@ jobs:
           security unlock-keychain -p "" ~/Library/Keychains/login.keychain-db || true
           curl -sS -o AppleWWDRCAG3.cer https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
           security import AppleWWDRCAG3.cer -k ~/Library/Keychains/login.keychain-db -T /usr/bin/codesign || true
+          curl -sS -o AppleWWDRCAG6.cer https://www.apple.com/certificateauthority/AppleWWDRCAG6.cer
+          security import AppleWWDRCAG6.cer -k ~/Library/Keychains/login.keychain-db -T /usr/bin/codesign || true
 
       - name: Install CocoaPods dependencies
         run: |
