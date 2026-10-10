@@ -11,28 +11,19 @@ platform :ios do
       in_house: false
     )
 
-    keychain_name = "ci_keychain"
-    keychain_password = "ci_password"
-
-    create_keychain(
-      name: keychain_name,
-      password: keychain_password,
-      default_keychain: true,
-      unlock: true,
-      timeout: 3600,
-      lock_when_sleeps: false
-    )
-
+    # Fetch existing or create new Distribution Certificate in login keychain
     get_certificates(
       api_key: api_key,
       development: false
     )
 
+    # Fetch or create App Store Provisioning Profile
     get_provisioning_profile(
       api_key: api_key,
       app_identifier: "app.web.imart.business"
     )
 
+    # Set code signing to manual using downloaded profile
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "imart.xcodeproj",
@@ -42,6 +33,7 @@ platform :ios do
       code_sign_identity: "Apple Distribution"
     )
 
+    # Build the archive and package IPA
     build_app(
       workspace: "imart.xcworkspace",
       scheme: "imart",
@@ -50,6 +42,7 @@ platform :ios do
       output_name: "imart.ipa"
     )
 
+    # Upload to App Store Connect
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true
